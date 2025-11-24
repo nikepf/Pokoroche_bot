@@ -94,7 +94,7 @@ Pokoroche_bot/
 ## Роль каждого участника в проекте
 
 - TL - Епифанов Николай
-- Backend1 - (TBA)
-- Backend2 - (TBA)
-- Backend3 - (TBA)
-- ML - (TBA)
+- Backend1 - Малеваник Владимир
+- Backend2 - Маликова Полина
+- Backend3 - Кисиев Александр
+- ML - Щелочева Екатерина
