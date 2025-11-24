@@ -41,7 +41,7 @@ Pokoroche_bot/
 │       │   ├── ml_client.py
 │       │   └── redis_client.py
 │       ├── commands/
-|       |   ├── start_cmd.py
+│       │   ├── start_cmd.py
 │       │   ├── digest_cmd.py
 │       │   ├── subscribe_cmd.py
 │       │   └── stats_cmd.py
@@ -57,7 +57,7 @@ Pokoroche_bot/
 │       ├── infrastructure/
 │       │   ├── database/
 │       │   ├── ml/
-|       |   ├── config/
+│       │   ├── config/
 │       │   └── scheduler.py
 │       └── application/
 │           ├── use_cases/
