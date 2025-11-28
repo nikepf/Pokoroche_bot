@@ -1,0 +1,52 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python/
+
+# Virtual environments and secrets
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+**/.gitignore 
+
+# Logs
+*.log
+logs/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Tests
+tests/
+
+# Scripts
+scripts/
+
+# Docker development files
+docker/docker-compose.override.yaml
+docker/Dockerfile.dev
+
+# ML models
+ml_pipeline/models/*.pkl
+ml_pipeline/models/*.joblib
+ml_pipeline/models/*.h5
+ml_pipeline/models/*.pt

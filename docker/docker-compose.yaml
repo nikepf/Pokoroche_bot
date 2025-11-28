@@ -1,0 +1,63 @@
+version: '3.8'
+
+name: pokoroche-bot
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: pokoroche-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-pokoroche}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pokoroche-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: pokoroche-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - pokoroche-network
+
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: pokoroche-bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-pokoroche}
+      - REDIS_URL=redis://redis:6379
+      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://localhost:8001}
+    restart: unless-stopped
+    networks:
+      - pokoroche-network
+
+volumes:
+  postgres_data:
+
+networks:
+  pokoroche-network:
+    driver: bridge
