@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Any, Dict
+from redis.asyncio import Redis
+
 
 class IRedisClient(ABC):
     """Интерфейс для работы с Redis"""
@@ -34,24 +36,41 @@ class RedisClient(IRedisClient):
     
     def __init__(self, redis_url: str):
         self.redis_url = redis_url
-        self.is_connected = False
+        self.redis: Optional[Redis] = None
     
     async def connect(self) -> None:
-        # TODO: Установить асинхронное подключение к Redis
-        self.is_connected = True
-    
+        """Установление асинхронного подключения к Redis"""
+        self.redis = Redis.from_url(
+            self.redis_url,
+            decode_responses=True,
+        )
+        await self.redis.ping()
+
     async def disconnect(self) -> None:
-        # TODO: Закрыть подключение к Redis
-        self.is_connected = False
-    
+        """Закрытие подключения к Redis"""
+        if self.redis:
+            await self.redis.close()
+            self.redis = None
+            
     async def get(self, key: str) -> Optional[str]:
-        # TODO: Реализовать получение значения по ключу
-        return None
+        """Получение значения по ключу"""
+        if not self.redis:
+            raise RuntimeError("Redis isn't connected!")
+        
+        return await self.redis.get(key)
     
     async def set(self, key: str, value: str, expire: int = None) -> bool:
-        # TODO: Реализовать установку значения
-        return True
-    
+        """Установка значения по ключу."""
+        if not self.redis:
+            raise RuntimeError("Redis isn't connected!")
+        
+        result = await self.redis.set(key, value, ex=expire)
+        return bool(result)
+
     async def delete(self, key: str) -> bool:
-        # TODO: Реализовать удаление ключа
-        return True
+        """Удаление элемента по ключу."""
+        if not self.redis:
+            raise RuntimeError("Redis isnt connected!")
+        
+        removed = self.redis.delete(key)
+        return removed > 0
