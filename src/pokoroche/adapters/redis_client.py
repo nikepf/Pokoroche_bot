@@ -31,6 +31,21 @@ class IRedisClient(ABC):
         """Удалить ключ"""
         pass
 
+    @abstractmethod
+    async def rpush(self, key: str, value: str) -> int:
+        """Добавить элемент в конец очереди"""
+        pass
+    
+    @abstractmethod
+    async def lpop(self, key: str) -> Optional[str]:
+        """Взять элемент из начала очереди"""
+        pass
+    
+    @abstractmethod
+    async def llen(self, key: str) -> int:
+        """Получить размер очереди (количество элементов)"""
+        pass
+
 class RedisClient(IRedisClient):
     """Реализация Redis клиента"""
     
@@ -72,5 +87,17 @@ class RedisClient(IRedisClient):
         if not self.redis:
             raise RuntimeError("Redis isnt connected!")
         
-        removed = self.redis.delete(key)
+        removed = await self.redis.delete(key)
         return removed > 0
+    
+    async def rpush(self, key: str, value: str) -> int:
+        """Добавить элемент в конец очереди"""
+        raise NotImplementedError("Реализуйте метод rpush")
+    
+    async def lpop(self, key: str) -> Optional[str]:
+        """Взять элемент из начала очереди"""
+        raise NotImplementedError("Реализуйте метод lpop")
+    
+    async def llen(self, key: str) -> int:
+        """Получить размер очереди (количество элементов)"""
+        raise NotImplementedError("Реализуйте метод llen")

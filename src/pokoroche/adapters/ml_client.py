@@ -36,7 +36,7 @@ class MLClient(IMLClient):
         for _ in range(self.max_retries):
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(url, json=payload, timeout=self.timeuot) as resp:
+                    async with session.post(url, json=payload, timeout=self.timeout) as resp:
                         resp.raise_for_status()
                         data = await resp.json()
                         return float(data["importance"])
@@ -72,3 +72,30 @@ class MLClient(IMLClient):
                     return resp.status == 200
         except Exception:
             return False
+        
+
+class CachedMLClient(MLClient):
+    """ML клиент с кешированием результатов в Redis"""
+    
+    def __init__(self, ml_service_url: str, redis_client, timeout: int = 30, max_retries: int = 3):
+        super().__init__(ml_service_url, timeout, max_retries)
+        self.redis = redis_client
+    
+    async def analyze_importance(self, text: str, context: Dict[str, Any] = None) -> float:
+        """Анализ важности с кешированием"""
+        # TODO: Реализовать логику кеширования:
+        # 1. Создать ключ кеша на основе текста (например, используя хеш)
+        # 2. Проверить наличие в Redis через self.redis.get()
+        # 3. Если значение есть в кеше - вернуть его
+        # 4. Если нет - вызвать super().analyze_importance() и сохранить результат в Redis
+        # 5. Установить TTL
+        raise NotImplementedError("Реализуйте analyze_importance с кешированием")
+    
+    async def extract_topics(self, text: str) -> List[str]:
+        """Извлечение тем с кешированием"""
+        # TODO: Реализовать логику кеширования аналогично analyze_importance
+        # 1. Создать ключ кеша
+        # 2. Проверить Redis
+        # 3. Если есть - вернуть из кеша (не забыть десериализовать JSON)
+        # 4. Если нет - вызвать super().extract_topics() и сохранить в Redis
+        raise NotImplementedError("Реализуйте extract_topics с кешированием")

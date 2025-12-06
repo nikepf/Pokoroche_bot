@@ -68,7 +68,7 @@ class ImportanceService(IImportanceService):
             print(f"Ошибка при вызове ML: {e}")
             score = 0.0
         # Нормализация score
-        if score is None or score < 0.0:
+        if score < 0.0:
             score = 0.0
         elif score > 1.0:
             score = 1.0

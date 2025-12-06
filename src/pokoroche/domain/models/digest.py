@@ -1,25 +1,23 @@
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-from sqlalchemy import BigInteger, Column, DateTime, Float, ForeignKey, JSON, Text
-from src.pokoroche.infrastructure.database.database import Base
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import List, Dict, Any, Optional
 
 
-class DigestEntity(Base):
+@dataclass
+class DigestEntity:
     """Сущность дайджеста.
 
     Хранение сгенерированного дайджеста для пользователя, а также
     вспомогательной информации по сообщениям и пользовательского фидбека.
     """
 
-    __tablename__ = "digests"
-
-    id = Column(BigInteger, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
-    content = Column(Text, nullable=False)
-    important_messages = Column(JSON, default=list)
-    summary = Column(Text)
-    sent_at = Column(DateTime, default=datetime.now(timezone.utc))
-    feedback_score = Column(Float)
+    user_id: int
+    content: str
+    important_messages: List[Dict[str, Any]] = field(default_factory=list)
+    summary: Optional[str] = None
+    feedback_score: Optional[float] = None
+    id: Optional[int] = None  # ID из БД
+    sent_at: datetime = field(default_factory=datetime.utcnow)
 
     def __repr__(self) -> str:
         return (

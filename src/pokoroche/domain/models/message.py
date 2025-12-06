@@ -1,27 +1,23 @@
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import List
-from sqlalchemy import BigInteger, Column, DateTime, Float, ForeignKey, JSON, Text
-from src.pokoroche.infrastructure.database.database import Base
+from typing import List, Dict, Any, Optional
 
 
-class MessageEntity(Base):
+@dataclass
+class MessageEntity:
     """Сущность сообщения из чата."""
 
     __tablename__ = "messages"
 
-    id = Column(BigInteger, primary_key=True)
-    telegram_message_id = Column(BigInteger, nullable=False)
-    chat_id = Column(BigInteger, nullable=False, index=True)
-    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
-    text = Column(Text, nullable=False)
-    importance_score = Column(Float, default=0.0)
-    topics = Column(JSON, default=list)
-    metadata = Column(JSON, default=dict)
-    created_at = Column(
-        DateTime,
-        default=datetime.now(timezone.utc),
-        index=True,
-    )
+    telegram_message_id: int
+    chat_id: int
+    user_id: int
+    text: str
+    importance_score: float = 0.0
+    topics: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    id: Optional[int] = None  # ID из БД
+    created_at: datetime = field(default_factory=datetime.utcnow)
 
     def __repr__(self) -> str:
         return (

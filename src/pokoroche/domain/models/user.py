@@ -1,34 +1,24 @@
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-from sqlalchemy import BigInteger, Column, DateTime, JSON, String
-from sqlalchemy.orm import relationship
-from src.pokoroche.infrastructure.database.database import Base
+from typing import Dict, Any, List, Optional
 
 
-class UserEntity(Base):
+@dataclass
+class UserEntity:
     """Сущность пользователя Telegram."""
+    telegram_id: int
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    settings: Dict[str, Any] = field(default_factory=lambda: {
+        "digest_time": "20:00",
+        "detail_level": "brief",
+        "timezone": "Europe/Moscow",
+    })
+    id: Optional[int] = None  # ID из БД
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    updated_at: datetime = field(default_factory=datetime.utcnow)
 
-    __tablename__ = "users"
-
-    id = Column(BigInteger, primary_key=True)
-    telegram_id = Column(BigInteger, unique=True, nullable=False, index=True)
-    username = Column(String(100))
-    first_name = Column(String(100))
-    last_name = Column(String(100))
-    settings = Column(
-        JSON,
-        default=lambda: {
-            "digest_time": "20:00",
-            "detail_level": "brief",
-            "timezone": "Europe/Moscow",
-        },
-    )
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    updated_at = Column(
-        DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
 
     def __repr__(self) -> str:
         return (
