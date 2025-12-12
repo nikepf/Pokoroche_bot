@@ -59,7 +59,7 @@ class FeedbackService(IFeedbackService):
         # Если пустой, то возвращаю нули
         if feedback_list is None:
             return {"positive": 0, "negative": 0}
-        # Иначе прохожусь по элементу из списка и подсчитываю голоса
+        # Иначе прохожусь по элементу из списка и подсчитываю голоса (позитивные и негативные)
         positive, negative = 0, 0
         for item in feedback_list:
             if item.score == 1:
