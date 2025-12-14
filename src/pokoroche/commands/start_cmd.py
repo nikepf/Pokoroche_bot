@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from src.pokoroche.domain.models.user import UserEntity
+from src.pokoroche.application.use_cases.user_registration import UserRegistrationUseCase
 
 
 class StartCommand:
@@ -8,28 +8,25 @@ class StartCommand:
     def __init__(self, telegram_bot, user_repository):
         self.telegram_bot = telegram_bot
         self.user_repository = user_repository
+        # регестрирует пользователя: проверяет пользователя в БД, создаёт/обновляет и ставит дефолтные настройки
+        self.user_registration_uc = UserRegistrationUseCase(
+            user_repository=user_repository,
+            telegram_bot=telegram_bot,
+        )
 
     async def handle(self, user_id: int,
                      message: Dict[str, Any]) -> str:
         """
         Обработать команду /start
         """
-        # TODO: Реализовать find_by_telegram_id: поиск пользователя по telegram_id
-        user = await self.user_repository.find_by_telegram_id(user_id)
-        if user is None:
-            from_user = message.get("from") or {}
-            username = from_user.get("username")
-            first_name = from_user.get("first_name")
-            last_name = from_user.get("last_name")
-            new_user = UserEntity(
-                telegram_id=user_id,
-                username=username,
-                first_name=first_name,
-                last_name=last_name,
-            )
-            await self.user_repository.insert(new_user)
-            # settings по умолчанию задаются default в UserEntity.settings
+        from_user = message.get("from") or {}
+        user_data = {
+            "username": from_user.get("username"),
+            "first_name": from_user.get("first_name"),
+            "last_name": from_user.get("last_name"),
+        }
 
+        await self.user_registration_uc.execute(user_id, user_data)
         # TODO: приветсвенное сообщение можно бубет поменять
         return (
             "Привет! Я бот Pokoroche.\n\n"
