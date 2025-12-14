@@ -1,4 +1,6 @@
 from typing import Optional
+import json
+
 class MessageQueue:
     """Очередь сообщений для асинхронной обработки"""
     
@@ -7,9 +9,13 @@ class MessageQueue:
     
     async def push(self, queue_name: str, message_data: dict) -> bool:
         """Добавить сообщение в очередь"""
-        raise NotImplementedError("Реализуйте push")
+        message_json = json.dumps(message_data)
+        await self.redis.rpush(queue_name, message_json)
+        return True
     
     async def pop(self, queue_name: str) -> Optional[dict]:
         """Взять сообщение из очереди"""
-        # TODO: Реализовать извлечение сообщения из Redis очереди
-        raise NotImplementedError("Реализуйте pop")
+        message = await self.redis.lpop(queue_name)
+        if message is None:
+            return None
+        return json.loads(message)

@@ -1,3 +1,5 @@
+import time
+
 class CacheItem:
     """Элемент кеша"""
     
@@ -5,8 +7,11 @@ class CacheItem:
         self.key = key
         self.value = value
         self.ttl = ttl  # время жизни в секундах
+        self.created_at = time.time() #время создания кеша
     
     def is_valid(self) -> bool:
         """Проверить, не истек ли срок действия"""
-        # TODO: Реализовать проверку срока действия
-        raise NotImplementedError("Реализуйте is_valid")
+        if self.ttl is None:
+            return True
+        return (time.time() - self.created_at) < self.ttl
+    
