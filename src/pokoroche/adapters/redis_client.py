@@ -53,6 +53,10 @@ class RedisClient(IRedisClient):
         self.redis_url = redis_url
         self.redis: Optional[Redis] = None
     
+    def _check_connection(self) -> None:
+        if not self.redis:
+            raise RuntimeError("Redis isn't connected!")
+
     async def connect(self) -> None:
         """Установление асинхронного подключения к Redis"""
         self.redis = Redis.from_url(
@@ -69,35 +73,34 @@ class RedisClient(IRedisClient):
             
     async def get(self, key: str) -> Optional[str]:
         """Получение значения по ключу"""
-        if not self.redis:
-            raise RuntimeError("Redis isn't connected!")
-        
+        self._check_connection()
         return await self.redis.get(key)
     
     async def set(self, key: str, value: str, expire: int = None) -> bool:
         """Установка значения по ключу."""
-        if not self.redis:
-            raise RuntimeError("Redis isn't connected!")
+        self._check_connection()
         
         result = await self.redis.set(key, value, ex=expire)
         return bool(result)
 
     async def delete(self, key: str) -> bool:
         """Удаление элемента по ключу."""
-        if not self.redis:
-            raise RuntimeError("Redis isnt connected!")
+        self._check_connection()
         
         removed = await self.redis.delete(key)
         return removed > 0
     
     async def rpush(self, key: str, value: str) -> int:
         """Добавить элемент в конец очереди"""
-        raise NotImplementedError("Реализуйте метод rpush")
+        self._check_connection()
+        return await self.redis.rpush(key, value)
     
     async def lpop(self, key: str) -> Optional[str]:
         """Взять элемент из начала очереди"""
-        raise NotImplementedError("Реализуйте метод lpop")
+        self._check_connection()
+        return await self.redis.lpop(key)
     
     async def llen(self, key: str) -> int:
         """Получить размер очереди (количество элементов)"""
-        raise NotImplementedError("Реализуйте метод llen")
+        self._check_connection()
+        return await self.redis.llen(key)

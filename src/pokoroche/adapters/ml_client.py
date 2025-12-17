@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
+import hashlib
 import aiohttp
+import json
+from .dtos.cache_dto import CacheItem
 
 class IMLClient(ABC):
     """Интерфейс для взаимодействия с ML сервисом"""
@@ -76,26 +79,38 @@ class MLClient(IMLClient):
 
 class CachedMLClient(MLClient):
     """ML клиент с кешированием результатов в Redis"""
+
+    CACHE_TTL = 3600 #Значение будет находиться в кеше CACHE_TTL секунд
     
     def __init__(self, ml_service_url: str, redis_client, timeout: int = 30, max_retries: int = 3):
-        super().__init__(ml_service_url, timeout, max_retries)
-        self.redis = redis_client
+           super().__init__(ml_service_url, timeout, max_retries)
+           self.redis = redis_client
+
+    def _generate_cache_key(self, text: str, prefix: str) -> str:
+        """Генерируем уникальный ключ для Redis по тексту"""
+        text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return f"{prefix}:{text_hash}"
     
     async def analyze_importance(self, text: str, context: Dict[str, Any] = None) -> float:
         """Анализ важности с кешированием"""
-        # TODO: Реализовать логику кеширования:
-        # 1. Создать ключ кеша на основе текста (например, используя хеш)
-        # 2. Проверить наличие в Redis через self.redis.get()
-        # 3. Если значение есть в кеше - вернуть его
-        # 4. Если нет - вызвать super().analyze_importance() и сохранить результат в Redis
-        # 5. Установить TTL
-        raise NotImplementedError("Реализуйте analyze_importance с кешированием")
-    
+        key = self._generate_cache_key(text, "importance")
+
+        cached = await self.redis.get(key)
+        if cached:
+            return float(cached)
+        
+        result = await super().analyze_importance(text, context)
+        await self.redis.set(key, str(result), expire=self.CACHE_TTL)
+        return result
+
     async def extract_topics(self, text: str) -> List[str]:
         """Извлечение тем с кешированием"""
-        # TODO: Реализовать логику кеширования аналогично analyze_importance
-        # 1. Создать ключ кеша
-        # 2. Проверить Redis
-        # 3. Если есть - вернуть из кеша (не забыть десериализовать JSON)
-        # 4. Если нет - вызвать super().extract_topics() и сохранить в Redis
-        raise NotImplementedError("Реализуйте extract_topics с кешированием")
+        key = self._generate_cache_key(text, "topics")
+
+        cached = await self.redis.get(key)
+        if cached:
+            return json.loads(cached)
+        
+        result = await super().extract_topics(text)
+        await self.redis.set(key, json.dumps(result), expire=self.CACHE_TTL)
+        return result
