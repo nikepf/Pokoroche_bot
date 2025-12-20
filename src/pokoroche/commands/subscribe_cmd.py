@@ -36,9 +36,9 @@ class SubscribeCommand:
                 return (
                     "У тебя пока нет подписок.\n\n"
                     "Как пользоваться:\n"
-                    "/subscribe — показать подписки\n"
-                    "/subscribe add <тема> — подписаться\n"
-                    "/subscribe remove <тема> — отписаться"
+                    "/subscribe - показать подписки\n"
+                    "/subscribe add <тема> - подписаться\n"
+                    "/subscribe remove <тема> - отписаться"
                 )
 
             # темы есть
@@ -58,9 +58,9 @@ class SubscribeCommand:
             return (
                 "Неверный формат команды.\n\n"
                 "Как пользоваться:\n"
-                "/subscribe — показать подписки\n"
-                "/subscribe add <тема> — подписаться\n"
-                "/subscribe remove <тема> — отписаться"
+                "/subscribe - показать подписки\n"
+                "/subscribe add <тема> - подписаться\n"
+                "/subscribe remove <тема> - отписаться"
             )
 
         # достаем тему

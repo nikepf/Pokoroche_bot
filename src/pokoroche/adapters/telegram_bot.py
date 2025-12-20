@@ -221,5 +221,6 @@ class TelegramBot(ITelegramBot):
             {"command": "subscribe", "description": "Выбрать темы и ключевые слова"},
             {"command": "stats", "description": "Статистика"},
             {"command": "settings", "description": "Настройка дайджестов"},
+            {"command": "digest", "description": "Получить дайджест сейчас"},
         ]
         await self.post("setMyCommands", {"commands": commands})
