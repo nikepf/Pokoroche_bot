@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 import hashlib
@@ -81,8 +82,26 @@ class MLClient(IMLClient):
                         return list(data["topics"])
             except Exception:
                 continue
-
-        return []
+        # Если текст пустой, то возвращаю пустой список
+        if not text:
+            return []
+        text = text.strip().lower()
+        words = text.split()
+        # Допустимые символы - русские или латинские буквы, цифры, дефис
+        allowed_chars = re.compile(r'[^a-zA-Zа-яА-ЯёЁ0-9-]')
+        unique_words = set()
+        for word in words:
+            # "Очищаю" слово от недопустимых символов
+            cleaned_word = allowed_chars.sub('', word)
+            # Если слово осталось не пустым, то добавляю его в set
+            if cleaned_word:
+                unique_words.add(cleaned_word)
+        topics = []
+        for word in unique_words:
+            # Если длина слова больше 4 (исключаю короткие слова по типу и, на, или и тд), то добавляю в список тем
+            if len(word) > 4:
+                topics.append(word)
+        return topics
 
     async def health_check(self) -> bool:
         """Проверка, доступен ли ML сервер"""
