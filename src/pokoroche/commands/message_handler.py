@@ -36,13 +36,14 @@ class MessageHandler:
             text: Текст сообщения
             message_data: Полные данные сообщения от Telegram API
         """
-        logger.info("Processing message",
-                    user_id=user_id,
-                    chat_id=chat_id,
-                    text_preview=text[:50] if text else "")
-
-        if not isinstance(text, str) or not text.strip():
-            return
+        text = text if isinstance(text, str) else ""
+        logger.info(
+            "Processing message",
+            user_id=user_id,
+            chat_id=chat_id,
+            text_preview=text[:50] if text else "",
+        )
+        has_text = bool(text.strip())
 
         # 1)создание MessageEntity
         telegram_message_id = message_data.get("message_id")
@@ -64,9 +65,8 @@ class MessageHandler:
 
         #  2) анализ важности
         importance_score: float = 0.0
-        if self.importance_service is not None:
+        if has_text and self.importance_service is not None:
             val = await self.importance_service.calculate_importance(text, context=message_data)
-            #  проверка, что действительно число(int or float); приводим к float
             if isinstance(val, (int, float)):
                 importance_score = float(val)
 
@@ -74,7 +74,7 @@ class MessageHandler:
 
         # 3) Извлечение тем
         topics = []
-        if self.topic_service is not None:
+        if has_text and self.topic_service is not None:
             topics = await self.topic_service.extract_topics(text)
 
         for t in topics:
