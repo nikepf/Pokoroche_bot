@@ -3,7 +3,6 @@ from typing import List, Dict, Any
 import hashlib
 import aiohttp
 import json
-from .dtos.cache_dto import CacheItem
 
 class IMLClient(ABC):
     """Интерфейс для взаимодействия с ML сервисом"""
@@ -97,8 +96,10 @@ class CachedMLClient(MLClient):
 
         cached = await self.redis.get(key)
         if cached:
+            print("CACHE HIT (Redis)")
             return float(cached)
         
+        print("CACHE MISS (calling ML)")
         result = await super().analyze_importance(text, context)
         await self.redis.set(key, str(result), expire=self.CACHE_TTL)
         return result
