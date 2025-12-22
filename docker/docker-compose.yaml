@@ -21,6 +21,16 @@ services:
       retries: 5
     networks:
       - pokoroche-network
+  ml_mock:
+    build:
+      context: ../ml_mock
+      dockerfile: Dockerfile
+    container_name: pokoroche-ml-mock
+    ports:
+      - "8001:8000"
+    networks:
+      - pokoroche-network
+
 
   redis:
     image: redis:7-alpine
@@ -50,8 +60,8 @@ services:
       - BOT_TOKEN=${BOT_TOKEN}
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-pokoroche}
       - REDIS_URL=redis://redis:6379
-      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://localhost:8001}
-    restart: unless-stopped
+      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://ml_mock:8000}
+    restart: "no"
     networks:
       - pokoroche-network
 
