@@ -6,7 +6,6 @@ from src.pokoroche.infrastructure.database.database import Base
 
 
 class MessageModel(Base):
-    """SQLAlchemy модель для таблицы messages"""
     __tablename__ = "messages"
 
     id = Column(BigInteger, primary_key=True)
@@ -23,19 +22,11 @@ class MessageModel(Base):
     text = Column(Text, nullable=False)
     importance_score = Column(Float, default=0.0)
 
-    topics = Column(
-        JSON,
-        nullable=False,
-        default=list,
-    )
+    topics = Column(JSON, nullable=False, default=list)
 
-    metadata = Column(
-        JSON,
-        nullable=False,
-        default=dict,
-    )
+    meta = Column("metadata", JSON, nullable=False, default=dict)
 
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self) -> str:
         return f"<MessageModel(id={self.id}, user_id={self.user_id}, importance_score={self.importance_score})>"
