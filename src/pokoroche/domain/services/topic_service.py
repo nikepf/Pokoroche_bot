@@ -74,4 +74,17 @@ class TopicService(ITopicService):
     async def categorize_message(self, text: str) -> Dict[str, float]:
         # TODO: Реализовать многоклассовую классификацию
         topics = await self.extract_topics(text)
-        return {topic: 1.0 for topic in topics}
+        text_lower = text.lower()
+        words = text_lower.split()
+        number_for_topics = {}
+        for topic in topics:
+            # Считаю, сколько раз topic встречается среди слов в тексте.
+            # Привожу topic к нижнему регистру для совпадения.
+            count = words.count(topic.lower())
+            number_for_topics[topic] = count
+        result = {}
+        for topic, count in number_for_topics.items():
+            # Высчитываю score - даю базовый бонус 0.5 и добавляю 0.1 за каждое упоминание слова в тексте, беру минимум с 1.0
+            score = min(0.5 + 0.1 * count, 1.0)
+            result[topic] = score
+        return result

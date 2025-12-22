@@ -1,9 +1,18 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, Tuple
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine, create_async_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+
 Base = declarative_base()
+
+from src.pokoroche.infrastructure.database.models.user_model import UserModel  # noqa: F401,E402
+from src.pokoroche.infrastructure.database.models.message_model import MessageModel  # noqa: F401,E402
+from src.pokoroche.infrastructure.database.models.digest_model import DigestModel  # noqa: F401,E402
+
+from src.pokoroche.infrastructure.database.repositories.user_repository import UserRepository  # noqa: E402
+from src.pokoroche.infrastructure.database.repositories.message_repository import MessageRepository  # noqa: E402
+from src.pokoroche.infrastructure.database.repositories.digest_repository import DigestRepository  # noqa: E402
 
 
 class Database:
@@ -66,6 +75,22 @@ class Database:
             return True
         except Exception:
             return False
+
+    @asynccontextmanager
+    async def get_repositories(
+        self,
+    ) -> AsyncGenerator[Tuple[UserRepository, MessageRepository, DigestRepository], None]:
+        if self.session_factory is None:
+            raise RuntimeError("Database is not connected. Call `connect()` first.")
+
+        async with self.session_factory() as session:
+            try:
+                user_repo = UserRepository(session)
+                message_repo = MessageRepository(session)
+                digest_repo = DigestRepository(session)
+                yield user_repo, message_repo, digest_repo
+            finally:
+                await session.close()
 
 
 # TODO: Добавить миграции (alembic / yoyo и т.п.)
