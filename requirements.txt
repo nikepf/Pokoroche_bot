@@ -28,3 +28,4 @@ structlog==23.2.0
 healthchecks-io==0.4.4
 
 alembic==1.13.3
+pydantic-settings>=2.0.0

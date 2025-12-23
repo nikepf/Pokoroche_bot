@@ -1,0 +1,23 @@
+# docker/docker-compose-bot-only.yaml
+services:
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: pokoroche-bot
+    environment:
+      BOT_TOKEN: "8553411467:AAEEZ78n_Tl5kOaZlK7LU9TWSq2o24WyDpA"
+      DATABASE_URL: "postgresql+asyncpg://postgres:password@pokoroche-postgres-old:5432/pokoroche"
+      REDIS_URL: "redis://pokoroche-redis-old:6379"
+      ML_SERVICE_URL: "http://pokoroche-ml-mock-old:8000"
+      DEBUG: "true"
+      ENVIRONMENT: "development"
+      LOG_LEVEL: "INFO"
+    restart: unless-stopped
+    networks:
+      - existing-network
+
+networks:
+  existing-network:
+    external: true
+    name: pokoroche-bot_pokoroche-network

@@ -1,45 +1,52 @@
-from pydantic import BaseSettings
+# src/pokoroche/infrastructure/config/config.py
+import os
 from typing import Optional
 
-class DatabaseSettings(BaseSettings):
-    """Настройки базы данных"""
-    database_url: Optional[str] = None
-    db_name: str = "pokoroche"
-    db_user: str = "postgres"
-    db_password: str = "password"
 
-class RedisSettings(BaseSettings):
-    """Настройки Redis"""
-    redis_url: str = "redis://localhost:6379"
+class DatabaseConfig:
+    def __init__(self):
+        self.url = os.getenv("DATABASE_URL")
+        self.name = os.getenv("DB_NAME", "pokoroche")
+        self.user = os.getenv("DB_USER", "postgres")
+        self.password = os.getenv("DB_PASSWORD", "password")
 
-class MLServiceSettings(BaseSettings):
-    """Настройки ML сервиса"""
-    ml_service_url: str = "http://localhost:8001"
 
-class BotSettings(BaseSettings):
-    """Настройки бота"""
-    bot_token: str
+class RedisConfig:
+    def __init__(self):
+        self.url = os.getenv("REDIS_URL", "redis://redis:6379")
 
-class AppSettings(BaseSettings):
-    """Общие настройки приложения"""
-    debug: bool = False
-    environment: str = "development"
-    log_level: str = "INFO"
 
-class ApplicationConfig(BaseSettings):
-    """Основной класс конфигурации"""
+class MLServiceConfig:
+    def __init__(self):
+        self.url = os.getenv("ML_SERVICE_URL", "http://ml_mock:8000")
 
-    database: DatabaseSettings = DatabaseSettings()
-    redis: RedisSettings = RedisSettings()
-    ml_service: MLServiceSettings = MLServiceSettings()
-    bot: BotSettings = BotSettings()
-    app: AppSettings = AppSettings()
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+
+class BotConfig:
+    def __init__(self):
+        self.token = os.getenv("BOT_TOKEN")
+        if not self.token:
+            raise ValueError("BOT_TOKEN не задан!")
+
+
+class AppConfig:
+    def __init__(self):
+        self.debug = os.getenv("DEBUG", "false").lower() == "true"
+        self.environment = os.getenv("ENVIRONMENT", "development")
+        self.log_level = os.getenv("LOG_LEVEL", "INFO")
+
+
+class ApplicationConfig:
+    def __init__(self):
+        self.database = DatabaseConfig()
+        self.redis = RedisConfig()
+        self.ml_service = MLServiceConfig()
+        self.bot = BotConfig()
+        self.app = AppConfig()
+        if not self.database.url:
+            raise ValueError("DATABASE_URL не задан!")
+        if not self.bot.token:
+            raise ValueError("BOT_TOKEN не задан!")
+
 
 def load_config() -> ApplicationConfig:
-    """Загрузить конфигурацию"""
     return ApplicationConfig()
