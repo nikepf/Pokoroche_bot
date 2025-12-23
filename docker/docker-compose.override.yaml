@@ -1,3 +1,4 @@
+version: '3.8'
 
 services:
   bot:
@@ -11,3 +12,7 @@ services:
       - DEBUG=true
       - ENVIRONMENT=development
       - LOG_LEVEL=DEBUG
+      - BOT_TOKEN=${BOT_TOKEN}
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-pokoroche}
+      - REDIS_URL=redis://redis:6379
+      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://ml_mock:8000}
