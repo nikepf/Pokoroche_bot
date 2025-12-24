@@ -6,6 +6,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.pokoroche.infrastructure.config.config import load_config
+from src.pokoroche.adapters.telegram_bot import TelegramBot
+from src.pokoroche.commands.start_cmd import StartCommand
+from src.pokoroche.commands.subscribe_cmd import SubscribeCommand
+from src.pokoroche.commands.settings_cmd import SettingsCommand
+from src.pokoroche.commands.digest_cmd import DigestCommand
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,33 +39,46 @@ class Application:
     async def setup_bot(self):
         logger.info("Инициализация Telegram бота...")
         
-        from src.pokoroche.adapters.telegram_bot import TelegramBot
-        from src.pokoroche.commands.start_cmd import StartCommand
-        from src.pokoroche.commands.settings_cmd import SettingsCommand
-        from src.pokoroche.commands.digest_cmd import DigestCommand
-        
         self.bot = TelegramBot(self.config.bot.token)
 
         class StubRepository:
+            def __init__(self):
+                self.users = {}
+                
             async def find_by_telegram_id(self, telegram_id):
-                return None
+                return self.users.get(telegram_id)
+                
             async def update(self, user):
-                pass
+                if hasattr(user, 'telegram_id'):
+                    self.users[user.telegram_id] = user
+                elif isinstance(user, dict) and 'telegram_id' in user:
+                    self.users[user['telegram_id']] = user
+                    
             async def insert(self, user):
-                pass
-        
+                if hasattr(user, 'telegram_id'):
+                    self.users[user.telegram_id] = user
+                elif isinstance(user, dict) and 'telegram_id' in user:
+                    self.users[user['telegram_id']] = user
+
         class StubDigestDelivery:
             async def execute(self, user_id):
                 return True
         
+        class StubTopicService:
+            async def extract_topics(self, text):
+                return ["тест"]
+
         stub_repo = StubRepository()
         stub_digest = StubDigestDelivery()
+        stub_topic_service = StubTopicService()
 
         start_handler = StartCommand(self.bot, stub_repo)
+        subscribe_handler = SubscribeCommand(self.bot, stub_repo, stub_topic_service)
         settings_handler = SettingsCommand(stub_repo)
         digest_handler = DigestCommand(stub_digest)
 
         self.bot.register_handler("/start", start_handler.handle)
+        self.bot.register_handler("/subscribe", subscribe_handler.handle)
         self.bot.register_handler("/settings", settings_handler.handle)
         self.bot.register_handler("/digest", digest_handler.handle)
         

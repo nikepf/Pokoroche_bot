@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: pokoroche-postgres-new
+    environment:
+      POSTGRES_DB: pokoroche
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data_new:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: pokoroche-redis-new
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  ml_mock:
+    build:
+      context: ../ml_mock
+      dockerfile: Dockerfile
+    container_name: pokoroche-ml-mock-new
+    ports:
+      - "8002:8000"
+
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: pokoroche-bot-new
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      BOT_TOKEN: "8553411467:AAEEZ78n_Tl5kOaZlK7LU9TWSq2o24WyDpA"
+      DATABASE_URL: "postgresql+asyncpg://postgres:password@postgres:5432/pokoroche"
+      REDIS_URL: "redis://redis:6379"
+      ML_SERVICE_URL: "http://ml_mock:8000"
+      DEBUG: "true"
+      ENVIRONMENT: "development"
+      LOG_LEVEL: "INFO"
+    restart: unless-stopped
+
+volumes:
+  postgres_data_new:

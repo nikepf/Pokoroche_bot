@@ -1,115 +1,87 @@
 class SubscribeCommand:
-    def __init__(self, user_repository, topic_service):
+    def __init__(self, bot, user_repository, topic_service):
+        self.bot = bot
         self.user_repository = user_repository
         self.topic_service = topic_service
 
-    # нормализация тем
-    def normalize_topic(self, topic: str) -> str:
-        return " ".join((topic or "").strip().lower().split())
+    def _normalize(self, s: str) -> str:
+        return " ".join((s or "").strip().lower().split())
 
-    async def handle(self, user_id: int, message: dict) -> str:
-        """Реализация подписок на темы"""
+    def _get_settings(self, user):
+        if isinstance(user, dict):
+            s = user.get("settings")
+            return s if isinstance(s, dict) else {}
+        s = getattr(user, "settings", None)
+        return s if isinstance(s, dict) else {}
 
-        text = message.get("text") or ""
-        if not isinstance(text, str):
-            return "Команда /subscribe"
+    def _set_topics(self, user, topics):
+        if isinstance(user, dict):
+            user.setdefault("settings", {})
+            if not isinstance(user["settings"], dict):
+                user["settings"] = {}
+            user["settings"]["topics"] = topics
+            return
+        if hasattr(user, "update_settings") and callable(getattr(user, "update_settings")):
+            user.update_settings(topics=topics)
+            return
+        s = getattr(user, "settings", None)
+        if isinstance(s, dict):
+            s["topics"] = topics
+            return
+        setattr(user, "settings", {"topics": topics})
+
+    async def handle(self, user_id: int, message) -> str:
+        if not isinstance(message, dict):
+            return "Некорректное сообщение"
+
+        text = str(message.get("text") or "")
         parts = text.split()
         if not parts:
             return "Команда /subscribe"
 
-        # /subscribe
-        # len = 1 чтобы не спутать с другой командой
-        if len(parts) == 1:
-            # достаём пользователя из БД
-            user = await self.user_repository.find_by_telegram_id(user_id)
-            if user is None:
-                return "Нажми /start, чтобы я тебя зарегистрировал."
-
-            # достаем список тем
-            settings = user.settings if isinstance(user.settings, dict) else {}
-            topics = settings.get("topics", [])
-            if not isinstance(topics, list):
-                topics = []
-
-            # если тем нет
-            if not topics:
-                return (
-                    "У тебя пока нет подписок.\n\n"
-                    "Как пользоваться:\n"
-                    "/subscribe - показать подписки\n"
-                    "/subscribe add <тема> - подписаться\n"
-                    "/subscribe remove <тема> - отписаться"
-                )
-
-            # темы есть
-            topics = [t for t in topics if isinstance(t, str) and t.strip()]
-            topics_str = ", ".join(topics)
-            return (
-                "Твои подписки:\n"
-                f"{topics_str}\n\n"
-                "Команды:\n"
-                "/subscribe add <тема>\n"
-                "/subscribe remove <тема>"
-            )
-
-        # /subscribe add <topic> и /subscribe remove <topic>
-        action = parts[1].lower()
-        if action not in ("add", "remove"):
-            return (
-                "Неверный формат команды.\n\n"
-                "Как пользоваться:\n"
-                "/subscribe - показать подписки\n"
-                "/subscribe add <тема> - подписаться\n"
-                "/subscribe remove <тема> - отписаться"
-            )
-
-        # достаем тему
-        _topic = " ".join(parts[2:]).strip()
-        topic = self.normalize_topic(_topic)
-        if not topic:
-            return (
-                "Укажи тему.\n\n"
-                "Пример:\n"
-                "/subscribe add учеба\n"
-                "/subscribe remove учеба"
-            )
-
-        # достаём пользователя из БД
         user = await self.user_repository.find_by_telegram_id(user_id)
         if user is None:
             return "Нажми /start, чтобы я тебя зарегистрировал."
 
-        # достаем список тем
-        settings = user.settings if isinstance(user.settings, dict) else {}
+        settings = self._get_settings(user)
         topics = settings.get("topics", [])
         if not isinstance(topics, list):
             topics = []
 
-        # чистим и готовим для сравнения
-        topics = [t for t in topics if isinstance(t, str) and t.strip()]
-        topics_norm = [self.normalize_topic(t) for t in topics]
+        if len(parts) == 1:
+            if not topics:
+                return (
+                    "У тебя пока нет подписок.\n\n"
+                    "Использование:\n"
+                    "/subscribe add <тема>\n"
+                    "/subscribe remove <тема>"
+                )
+            return "Твои подписки:\n" + ", ".join(topics)
 
-        # add
+        if len(parts) < 3:
+            return "Использование: /subscribe add <тема> или /subscribe remove <тема>"
+
+        action = parts[1].lower()
+        topic = " ".join(parts[2:]).strip()
+        if not topic:
+            return "Тема не может быть пустой"
+
+        norm = self._normalize(topic)
+
         if action == "add":
-            if topic in topics_norm:
-                return f"Ты уже подписан(а) на тему: {topic}"
-
-            topics.append(topic)
-
-            # обновляем настройки пользователя
-            user.update_settings(topics=topics)
+            if any(self._normalize(t) == norm for t in topics):
+                return f"Ты уже подписан на тему: {topic}"
+            topics = topics + [topic]
+            self._set_topics(user, topics)
             await self.user_repository.update(user)
             return f"Готово! Ты подписался на тему: {topic}"
-        # remove
-        elif action == "remove":
-            if topic not in topics_norm:
-                return f"Тема не найдена в подписках: {topic}"
 
-            new_topics = []
-            for t in topics:
-                if self.normalize_topic(t) != topic:
-                    new_topics.append(t)
-
-            user.update_settings(topics=new_topics)
+        if action == "remove":
+            new_topics = [t for t in topics if self._normalize(t) != norm]
+            if len(new_topics) == len(topics):
+                return f"Тема '{topic}' не найдена в твоих подписках."
+            self._set_topics(user, new_topics)
             await self.user_repository.update(user)
-            return f"Готово! Подписка на тему: {topic} убрана"
+            return f"Готово! Подписка на тему '{topic}' удалена."
+
+        return "Неизвестное действие. Используй add или remove."
