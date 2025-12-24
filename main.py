@@ -41,6 +41,7 @@ class InMemoryUserRepo:
             self._users[k] = user
 
     async def update(self, user):
+<<<<<<< HEAD
         await self.insert(user)
 
     async def create(self, user):
@@ -54,11 +55,21 @@ class InMemoryUserRepo:
 
     async def upsert(self, user):
         await self.insert(user)
+=======
+        k = self._key(user)
+        if k is not None:
+            self._users[k] = user
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a
 
 
 class Application:
     def __init__(self):
         self.config = None
+<<<<<<< HEAD
+=======
+        self.db = None
+        self.redis = None
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a
         self.bot = None
 
     async def setup_database(self):
@@ -90,6 +101,7 @@ class Application:
             async def list_available_topics(self):
                 return []
 
+<<<<<<< HEAD
         start_cmd = StartCommand(self.bot, user_repo)
         settings_cmd = SettingsCommand(user_repo)
         digest_cmd = DigestCommand(StubDigestDelivery())
@@ -106,10 +118,25 @@ class Application:
         self.bot.register_handler("/settings", settings_cmd.handle)
         self.bot.register_handler("/digest", digest_cmd.handle)
         self.bot.register_handler("/subscribe", subscribe_cmd.handle)
+=======
+        stub_digest = StubDigestDelivery()
+        stub_topic_service = StubTopicService()
+
+        start_handler = StartCommand(self.bot, user_repo)
+        settings_handler = SettingsCommand(user_repo)
+        digest_handler = DigestCommand(stub_digest)
+        subscribe_handler = SubscribeCommand(self.bot, user_repo, stub_topic_service)
+
+        self.bot.register_handler("/start", start_handler.handle)
+        self.bot.register_handler("/settings", settings_handler.handle)
+        self.bot.register_handler("/digest", digest_handler.handle)
+        self.bot.register_handler("/subscribe", subscribe_handler.handle)
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a
 
         logger.info("Бот инициализирован")
 
     async def run(self):
+<<<<<<< HEAD
         self.config = load_config()
         logger.info("Конфигурация загружена")
         logger.info(f"Токен бота: {self.config.bot.token[:10]}...")
@@ -121,11 +148,55 @@ class Application:
         logger.info("Все компоненты инициализированы")
         logger.info("Запуск бота...")
         await self.bot.start()
+=======
+        try:
+            self.config = load_config()
+            logger.info("Конфигурация загружена")
+
+            if not self.config.bot.token:
+                logger.error("BOT_TOKEN не задан!")
+                return
+
+            logger.info(f"Токен бота: {self.config.bot.token[:10]}...")
+
+            await self.setup_database()
+            await self.setup_redis()
+            await self.setup_bot()
+
+            logger.info("Все компоненты инициализированы")
+            logger.info("Запуск бота...")
+
+            await self.bot.start()
+
+        except Exception as e:
+            logger.error(f"Ошибка при запуске: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+    async def shutdown(self):
+        logger.info("Завершение работы...")
+        if self.bot:
+            await self.bot.stop()
+        logger.info("Работа завершена")
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a
 
 
 def main():
     logger.info("Запуск Pokoroche бота...")
+<<<<<<< HEAD
     asyncio.run(Application().run())
+=======
+
+    app = Application()
+
+    try:
+        asyncio.run(app.run())
+    except KeyboardInterrupt:
+        logger.info("Остановлено пользователем")
+    except Exception as e:
+        logger.error(f"Критическая ошибка: {e}")
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a
 
 
 if name == "__main__":

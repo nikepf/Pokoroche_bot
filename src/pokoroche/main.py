@@ -3,7 +3,7 @@ import logging
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
 from src.pokoroche.infrastructure.config.config import load_config
 from src.pokoroche.adapters.telegram_bot import TelegramBot
@@ -15,17 +15,56 @@ from src.pokoroche.commands.digest_cmd import DigestCommand
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+
+class InMemoryUserRepo:
+    def __init__(self):
+        self._users = {}
+
+    def _key(self, user):
+        if isinstance(user, dict):
+            for k in ("telegram_id", "user_id", "id"):
+                v = user.get(k)
+                if v is not None:
+                    return int(v)
+            return None
+        for attr in ("telegram_id", "user_id", "id"):
+            v = getattr(user, attr, None)
+            if v is not None:
+                return int(v)
+        return None
+
+    async def find_by_telegram_id(self, telegram_id):
+        return self._users.get(int(telegram_id))
+
+    async def insert(self, user):
+        k = self._key(user)
+        if k is not None:
+            self._users[k] = user
+
+    async def update(self, user):
+        await self.insert(user)
+
+    async def create(self, user):
+        await self.insert(user)
+
+    async def save(self, user):
+        await self.insert(user)
+
+    async def add(self, user):
+        await self.insert(user)
+
+    async def upsert(self, user):
+        await self.insert(user)
 
 
 class Application:
     def __init__(self):
         self.config = None
-        self.db = None
-        self.redis = None
         self.bot = None
 
     async def setup_database(self):
@@ -38,6 +77,7 @@ class Application:
 
     async def setup_bot(self):
         logger.info("Инициализация Telegram бота...")
+<<<<<<< HEAD
         
         self.bot = TelegramBot(self.config.bot.token)
 
@@ -59,10 +99,23 @@ class Application:
                     self.users[user.telegram_id] = user
                 elif isinstance(user, dict) and 'telegram_id' in user:
                     self.users[user['telegram_id']] = user
+=======
+
+        from src.pokoroche.adapters.telegram_bot import TelegramBot
+        from src.pokoroche.commands.start_cmd import StartCommand
+        from src.pokoroche.commands.settings_cmd import SettingsCommand
+        from src.pokoroche.commands.digest_cmd import DigestCommand
+        from src.pokoroche.commands.subscribe_cmd import SubscribeCommand
+
+        self.bot = TelegramBot(self.config.bot.token)
+
+        user_repo = InMemoryUserRepo()
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a
 
         class StubDigestDelivery:
             async def execute(self, user_id):
                 return True
+<<<<<<< HEAD
         
         class StubTopicService:
             async def extract_topics(self, text):
@@ -82,51 +135,49 @@ class Application:
         self.bot.register_handler("/settings", settings_handler.handle)
         self.bot.register_handler("/digest", digest_handler.handle)
         
+=======
+
+        class StubTopicService:
+            async def list_available_topics(self):
+                return []
+
+        start_cmd = StartCommand(self.bot, user_repo)
+        settings_cmd = SettingsCommand(user_repo)
+        digest_cmd = DigestCommand(StubDigestDelivery())
+        subscribe_cmd = SubscribeCommand(user_repository=user_repo, topic_service=StubTopicService())
+
+        async def start_handler(user_id, msg):
+            reply = await start_cmd.handle(user_id, msg)
+            existing = await user_repo.find_by_telegram_id(user_id)
+            if existing is None:
+                await user_repo.insert({"telegram_id": user_id, "settings": {"topics": []}})
+            return reply
+
+        self.bot.register_handler("/start", start_handler)
+        self.bot.register_handler("/settings", settings_cmd.handle)
+        self.bot.register_handler("/digest", digest_cmd.handle)
+        self.bot.register_handler("/subscribe", subscribe_cmd.handle)
+
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a
         logger.info("Бот инициализирован")
 
     async def run(self):
-        try:
-            self.config = load_config()
-            logger.info("Конфигурация загружена")
+        self.config = load_config()
+        logger.info("Конфигурация загружена")
+        logger.info(f"Токен бота: {self.config.bot.token[:10]}...")
 
-            if not self.config.bot.token:
-                logger.error("BOT_TOKEN не задан!")
-                return
-            
-            logger.info(f"Токен бота: {self.config.bot.token[:10]}...")
+        await self.setup_database()
+        await self.setup_redis()
+        await self.setup_bot()
 
-            await self.setup_database()
-            await self.setup_redis()
-            await self.setup_bot()
-            
-            logger.info("Все компоненты инициализированы")
-            logger.info("Запуск бота...")
-
-            await self.bot.start()
-            
-        except Exception as e:
-            logger.error(f"Ошибка при запуске: {e}")
-            import traceback
-            traceback.print_exc()
-
-    async def shutdown(self):
-        logger.info("Завершение работы...")
-        if self.bot:
-            await self.bot.stop()
-        logger.info("Работа завершена")
+        logger.info("Все компоненты инициализированы")
+        logger.info("Запуск бота...")
+        await self.bot.start()
 
 
 def main():
     logger.info("Запуск Pokoroche бота...")
-    
-    app = Application()
-    
-    try:
-        asyncio.run(app.run())
-    except KeyboardInterrupt:
-        logger.info("Остановлено пользователем")
-    except Exception as e:
-        logger.error(f"Критическая ошибка: {e}")
+    asyncio.run(Application().run())
 
 
 if __name__ == "__main__":

@@ -84,4 +84,8 @@ class SubscribeCommand:
             await self.user_repository.update(user)
             return f"Готово! Подписка на тему '{topic}' удалена."
 
+<<<<<<< HEAD
         return "Неизвестное действие. Используй add или remove."
+=======
+        return "Неизвестное действие. Используй add или remove."
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a

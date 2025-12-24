@@ -206,4 +206,8 @@ class TelegramBot(ITelegramBot):
         ]
         data = await self.post("setMyCommands", {"commands": commands})
         if data.get("ok") is not True:
+<<<<<<< HEAD
             print("setMyCommands error:", data)
+=======
+            print("setMyCommands error:", data)
+>>>>>>> dea9d23ace1ae033e25d20924634a8b2728cad0a
